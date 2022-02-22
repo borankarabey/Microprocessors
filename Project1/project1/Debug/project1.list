@@ -1,0 +1,596 @@
+
+project1.elf:     file format elf32-littlearm
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         000001d8  08000000  08000000  00010000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .init         00000004  080001d8  080001d8  000101d8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .fini         00000004  080001dc  080001dc  000101dc  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  3 .data         00000000  20000000  20000000  000101e0  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  4 .bss          00000000  20000000  20000000  00000000  2**0
+                  ALLOC
+  5 .ARM.attributes 00000028  00000000  00000000  000101e0  2**0
+                  CONTENTS, READONLY
+  6 .debug_line   00000117  00000000  00000000  00010208  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_info   00000026  00000000  00000000  0001031f  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  8 .debug_abbrev 00000014  00000000  00000000  00010345  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  9 .debug_aranges 00000020  00000000  00000000  00010360  2**3
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_str    00000055  00000000  00000000  00010380  2**0
+                  CONTENTS, READONLY, DEBUGGING
+
+Disassembly of section .text:
+
+08000000 <vector_table>:
+ 8000000:	20002000 	.word	0x20002000
+ 8000004:	08000021 	.word	0x08000021
+ 8000008:	08000057 	.word	0x08000057
+ 800000c:	08000057 	.word	0x08000057
+ 8000010:	20000000 	.word	0x20000000
+ 8000014:	20000000 	.word	0x20000000
+ 8000018:	20000000 	.word	0x20000000
+ 800001c:	20000000 	.word	0x20000000
+
+08000020 <Reset_Handler>:
+
+/* reset handler */
+.section .text
+Reset_Handler:
+	/* set stack pointer */
+	ldr r0, =_estack
+ 8000020:	485c      	ldr	r0, [pc, #368]	; (8000194 <ledoff+0x12>)
+	mov sp, r0
+ 8000022:	4685      	mov	sp, r0
+
+	/* initialize data and bss 
+	 * not necessary for rom only code 
+	 * */
+	bl init_data
+ 8000024:	f000 f803 	bl	800002e <init_data>
+	/* call main */
+	bl main
+ 8000028:	f000 f816 	bl	8000058 <main>
+	/* trap if returned */
+	b .
+ 800002c:	e7fe      	b.n	800002c <Reset_Handler+0xc>
+
+0800002e <init_data>:
+/* initialize data and bss sections */
+.section .text
+init_data:
+
+	/* copy rom to ram */
+	ldr r0, =_sdata
+ 800002e:	485a      	ldr	r0, [pc, #360]	; (8000198 <ledoff+0x16>)
+	ldr r1, =_edata
+ 8000030:	495a      	ldr	r1, [pc, #360]	; (800019c <ledoff+0x1a>)
+	ldr r2, =_sidata
+ 8000032:	4a5b      	ldr	r2, [pc, #364]	; (80001a0 <ledoff+0x1e>)
+	movs r3, #0
+ 8000034:	2300      	movs	r3, #0
+	b LoopCopyDataInit
+ 8000036:	e002      	b.n	800003e <LoopCopyDataInit>
+
+08000038 <CopyDataInit>:
+
+	CopyDataInit:
+		ldr r4, [r2, r3]
+ 8000038:	58d4      	ldr	r4, [r2, r3]
+		str r4, [r0, r3]
+ 800003a:	50c4      	str	r4, [r0, r3]
+		adds r3, r3, #4
+ 800003c:	3304      	adds	r3, #4
+
+0800003e <LoopCopyDataInit>:
+
+	LoopCopyDataInit:
+		adds r4, r0, r3
+ 800003e:	18c4      	adds	r4, r0, r3
+		cmp r4, r1
+ 8000040:	428c      	cmp	r4, r1
+		bcc CopyDataInit
+ 8000042:	d3f9      	bcc.n	8000038 <CopyDataInit>
+
+	/* zero bss */
+	ldr r2, =_sbss
+ 8000044:	4a57      	ldr	r2, [pc, #348]	; (80001a4 <ledoff+0x22>)
+	ldr r4, =_ebss
+ 8000046:	4c58      	ldr	r4, [pc, #352]	; (80001a8 <ledoff+0x26>)
+	movs r3, #0
+ 8000048:	2300      	movs	r3, #0
+	b LoopFillZerobss
+ 800004a:	e001      	b.n	8000050 <LoopFillZerobss>
+
+0800004c <FillZerobss>:
+
+	FillZerobss:
+		str  r3, [r2]
+ 800004c:	6013      	str	r3, [r2, #0]
+		adds r2, r2, #4
+ 800004e:	3204      	adds	r2, #4
+
+08000050 <LoopFillZerobss>:
+
+	LoopFillZerobss:
+		cmp r2, r4
+ 8000050:	42a2      	cmp	r2, r4
+		bcc FillZerobss
+ 8000052:	d3fb      	bcc.n	800004c <FillZerobss>
+
+	bx lr
+ 8000054:	4770      	bx	lr
+
+08000056 <Default_Handler>:
+
+
+/* default handler */
+.section .text
+Default_Handler:
+	b Default_Handler
+ 8000056:	e7fe      	b.n	8000056 <Default_Handler>
+
+08000058 <main>:
+
+/* main function */
+.section .text
+main:
+	/* enable GPIOC clock, bit2 on IOPENR */
+	ldr r2, =RCC_IOPENR
+ 8000058:	4a54      	ldr	r2, [pc, #336]	; (80001ac <ledoff+0x2a>)
+	ldr r3, [r2]
+ 800005a:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x3
+ 800005c:	2403      	movs	r4, #3
+	orrs r3, r3, r4
+ 800005e:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 8000060:	6013      	str	r3, [r2, #0]
+
+// PB PORT OUTPUT MODE - PB0 PB1 PB2 PB3 PB4 PB5 PB6
+	ldr r2, =GPIOB_MODER
+ 8000062:	4a53      	ldr	r2, [pc, #332]	; (80001b0 <ledoff+0x2e>)
+	ldr r3, [r2]
+ 8000064:	6813      	ldr	r3, [r2, #0]
+
+	ldr r4, =0x1555
+ 8000066:	4c53      	ldr	r4, [pc, #332]	; (80001b4 <ledoff+0x32>)
+	ands r3, r3, r4
+ 8000068:	4023      	ands	r3, r4
+	str r3, [r2]
+ 800006a:	6013      	str	r3, [r2, #0]
+
+// PA PORT OUTPUT MODE - PA9 PA10 PA11 PA12
+	ldr r2, =GPIOA_MODER
+ 800006c:	4a52      	ldr	r2, [pc, #328]	; (80001b8 <ledoff+0x36>)
+	ldr r3, [r2]
+ 800006e:	6813      	ldr	r3, [r2, #0]
+
+	ldr r4, =0xFF
+ 8000070:	4c52      	ldr	r4, [pc, #328]	; (80001bc <ledoff+0x3a>)
+	lsls r4, r4, #18
+ 8000072:	04a4      	lsls	r4, r4, #18
+	bics r3, r3, r4
+ 8000074:	43a3      	bics	r3, r4
+	ldr r4, =0x55
+ 8000076:	4c52      	ldr	r4, [pc, #328]	; (80001c0 <ledoff+0x3e>)
+	lsls r4, r4, #18
+ 8000078:	04a4      	lsls	r4, r4, #18
+	orrs r3, r3, r4
+ 800007a:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 800007c:	6013      	str	r3, [r2, #0]
+
+// BUTTON INPUT MODE - PA8
+
+	ldr r2, =GPIOA_MODER
+ 800007e:	4a4e      	ldr	r2, [pc, #312]	; (80001b8 <ledoff+0x36>)
+	ldr r3, [r2]
+ 8000080:	6813      	ldr	r3, [r2, #0]
+	ldr r4, =0x3
+ 8000082:	4c50      	ldr	r4, [pc, #320]	; (80001c4 <ledoff+0x42>)
+	lsls r4, r4, #16
+ 8000084:	0424      	lsls	r4, r4, #16
+	bics r3, r3, r4
+ 8000086:	43a3      	bics	r3, r4
+	str r3, [r2]
+ 8000088:	6013      	str	r3, [r2, #0]
+
+// LED OUTPUT MODE - PA5
+
+	ldr r2, =GPIOA_MODER
+ 800008a:	4a4b      	ldr	r2, [pc, #300]	; (80001b8 <ledoff+0x36>)
+	ldr r3, [r2]
+ 800008c:	6813      	ldr	r3, [r2, #0]
+	ldr r4, =0x3
+ 800008e:	4c4d      	ldr	r4, [pc, #308]	; (80001c4 <ledoff+0x42>)
+	lsls r4, r4, #10
+ 8000090:	02a4      	lsls	r4, r4, #10
+	bics r3, r3, r4
+ 8000092:	43a3      	bics	r3, r4
+	movs r1, #0x1
+ 8000094:	2101      	movs	r1, #1
+	lsls r1, r1, #10
+ 8000096:	0289      	lsls	r1, r1, #10
+	orrs r3, r3, r1
+ 8000098:	430b      	orrs	r3, r1
+	str r3, [r2]
+ 800009a:	6013      	str	r3, [r2, #0]
+
+0800009c <digits>:
+
+digits:
+
+//  FOR THE FIRST DIGIT as 2
+
+	ldr r2, =GPIOA_ODR
+ 800009c:	4a4a      	ldr	r2, [pc, #296]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 800009e:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 80000a0:	2401      	movs	r4, #1
+	lsls r4, r4, #9				// shift 9 bits for PA9
+ 80000a2:	0264      	lsls	r4, r4, #9
+	orrs r3, r3, r4				// orr to make 1
+ 80000a4:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 80000a6:	6013      	str	r3, [r2, #0]
+
+	ldr r2, =GPIOB_ODR
+ 80000a8:	4a48      	ldr	r2, [pc, #288]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 80000aa:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x24				// to have 2 on first segment's display
+ 80000ac:	2424      	movs	r4, #36	; 0x24
+	ands r3, r3, r4				// and with it
+ 80000ae:	4023      	ands	r3, r4
+	str r3, [r2]
+ 80000b0:	6013      	str	r3, [r2, #0]
+
+    ldr r1, =delay
+ 80000b2:	4947      	ldr	r1, [pc, #284]	; (80001d0 <ledoff+0x4e>)
+
+080000b4 <delay1>:
+
+delay1:
+
+	subs r1, r1, #1
+ 80000b4:	3901      	subs	r1, #1
+	bne delay1
+ 80000b6:	d1fd      	bne.n	80000b4 <delay1>
+
+	ldr r2, =GPIOA_ODR
+ 80000b8:	4a43      	ldr	r2, [pc, #268]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 80000ba:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 80000bc:	2401      	movs	r4, #1
+	lsls r4, r4, #9
+ 80000be:	0264      	lsls	r4, r4, #9
+	bics r3, r3, r4
+ 80000c0:	43a3      	bics	r3, r4
+	str r3, [r2]
+ 80000c2:	6013      	str	r3, [r2, #0]
+
+    ldr r2, =GPIOB_ODR
+ 80000c4:	4a41      	ldr	r2, [pc, #260]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 80000c6:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x7F				// make them 1 to unlight
+ 80000c8:	247f      	movs	r4, #127	; 0x7f
+	orrs r3, r3, r4
+ 80000ca:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 80000cc:	6013      	str	r3, [r2, #0]
+
+//  FOR THE SECOND DIGIT as 0
+
+	ldr r2, =GPIOA_ODR
+ 80000ce:	4a3e      	ldr	r2, [pc, #248]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 80000d0:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 80000d2:	2401      	movs	r4, #1
+	lsls r4, r4, #10			// shift 10 bits for PA10
+ 80000d4:	02a4      	lsls	r4, r4, #10
+	orrs r3, r3, r4				// orr to make 1
+ 80000d6:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 80000d8:	6013      	str	r3, [r2, #0]
+
+	ldr r2, =GPIOB_ODR
+ 80000da:	4a3c      	ldr	r2, [pc, #240]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 80000dc:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x40				// to have 0 on the second segment's display
+ 80000de:	2440      	movs	r4, #64	; 0x40
+	ands r3, r3, r4				// and with it
+ 80000e0:	4023      	ands	r3, r4
+	str r3, [r2]
+ 80000e2:	6013      	str	r3, [r2, #0]
+
+    ldr r1, =delay
+ 80000e4:	493a      	ldr	r1, [pc, #232]	; (80001d0 <ledoff+0x4e>)
+
+080000e6 <delay2>:
+
+delay2:
+
+	subs r1, r1, #1
+ 80000e6:	3901      	subs	r1, #1
+	bne delay2
+ 80000e8:	d1fd      	bne.n	80000e6 <delay2>
+
+	ldr r2, =GPIOA_ODR
+ 80000ea:	4a37      	ldr	r2, [pc, #220]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 80000ec:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 80000ee:	2401      	movs	r4, #1
+	lsls r4, r4, #10
+ 80000f0:	02a4      	lsls	r4, r4, #10
+	bics r3, r3, r4
+ 80000f2:	43a3      	bics	r3, r4
+	str r3, [r2]
+ 80000f4:	6013      	str	r3, [r2, #0]
+
+    ldr r2, =GPIOB_ODR
+ 80000f6:	4a35      	ldr	r2, [pc, #212]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 80000f8:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x7F				// make them 1 to unlight
+ 80000fa:	247f      	movs	r4, #127	; 0x7f
+	orrs r3, r3, r4
+ 80000fc:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 80000fe:	6013      	str	r3, [r2, #0]
+
+// FOR THE THIRD DIGIT as 1
+
+   	ldr r2, =GPIOA_ODR
+ 8000100:	4a31      	ldr	r2, [pc, #196]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 8000102:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 8000104:	2401      	movs	r4, #1
+	lsls r4, r4, #11			// shift 11 bits for PA11
+ 8000106:	02e4      	lsls	r4, r4, #11
+	orrs r3, r3, r4				// orr to make 1
+ 8000108:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 800010a:	6013      	str	r3, [r2, #0]
+
+	ldr r2, =GPIOB_ODR
+ 800010c:	4a2f      	ldr	r2, [pc, #188]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 800010e:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x79				// to have 1 on third segment's display
+ 8000110:	2479      	movs	r4, #121	; 0x79
+	ands r3, r3, r4				// and with it
+ 8000112:	4023      	ands	r3, r4
+	str r3, [r2]
+ 8000114:	6013      	str	r3, [r2, #0]
+
+    ldr r1, =delay
+ 8000116:	492e      	ldr	r1, [pc, #184]	; (80001d0 <ledoff+0x4e>)
+
+08000118 <delay3>:
+
+delay3:
+
+	subs r1, r1, #1
+ 8000118:	3901      	subs	r1, #1
+	bne delay3
+ 800011a:	d1fd      	bne.n	8000118 <delay3>
+
+	ldr r2, =GPIOA_ODR
+ 800011c:	4a2a      	ldr	r2, [pc, #168]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 800011e:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 8000120:	2401      	movs	r4, #1
+	lsls r4, r4, #11
+ 8000122:	02e4      	lsls	r4, r4, #11
+	bics r3, r3, r4
+ 8000124:	43a3      	bics	r3, r4
+	str r3, [r2]
+ 8000126:	6013      	str	r3, [r2, #0]
+
+    ldr r2, =GPIOB_ODR
+ 8000128:	4a28      	ldr	r2, [pc, #160]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 800012a:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x7F				// make them 1 to unlight
+ 800012c:	247f      	movs	r4, #127	; 0x7f
+	orrs r3, r3, r4
+ 800012e:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 8000130:	6013      	str	r3, [r2, #0]
+
+// FOR THE FOURTH DIGIT as 1
+
+	ldr r2, =GPIOA_ODR
+ 8000132:	4a25      	ldr	r2, [pc, #148]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 8000134:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 8000136:	2401      	movs	r4, #1
+	lsls r4, r4, #12			// shift 12 bits for PA12
+ 8000138:	0324      	lsls	r4, r4, #12
+	orrs r3, r3, r4				// orr to make 1
+ 800013a:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 800013c:	6013      	str	r3, [r2, #0]
+
+	ldr r2, =GPIOB_ODR
+ 800013e:	4a23      	ldr	r2, [pc, #140]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 8000140:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x79				// to have 1 on third segment's display
+ 8000142:	2479      	movs	r4, #121	; 0x79
+	ands r3, r3, r4				// and with it
+ 8000144:	4023      	ands	r3, r4
+	str r3, [r2]
+ 8000146:	6013      	str	r3, [r2, #0]
+
+    ldr r1, =delay
+ 8000148:	4921      	ldr	r1, [pc, #132]	; (80001d0 <ledoff+0x4e>)
+
+0800014a <delay4>:
+
+delay4:
+
+	subs r1, r1, #1
+ 800014a:	3901      	subs	r1, #1
+	bne delay4
+ 800014c:	d1fd      	bne.n	800014a <delay4>
+
+	ldr r2, =GPIOA_ODR
+ 800014e:	4a1e      	ldr	r2, [pc, #120]	; (80001c8 <ledoff+0x46>)
+	ldr r3, [r2]
+ 8000150:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x1
+ 8000152:	2401      	movs	r4, #1
+	lsls r4, r4, #12
+ 8000154:	0324      	lsls	r4, r4, #12
+	bics r3, r3, r4
+ 8000156:	43a3      	bics	r3, r4
+	str r3, [r2]
+ 8000158:	6013      	str	r3, [r2, #0]
+
+    ldr r2, =GPIOB_ODR
+ 800015a:	4a1c      	ldr	r2, [pc, #112]	; (80001cc <ledoff+0x4a>)
+	ldr r3, [r2]
+ 800015c:	6813      	ldr	r3, [r2, #0]
+	movs r4, 0x7F				// make them 1 to unlight
+ 800015e:	247f      	movs	r4, #127	; 0x7f
+	orrs r3, r3, r4
+ 8000160:	4323      	orrs	r3, r4
+	str r3, [r2]
+ 8000162:	6013      	str	r3, [r2, #0]
+
+08000164 <button>:
+
+// BUTTON FUNCTION
+button:
+
+    ldr r2, =GPIOA_IDR
+ 8000164:	4a1b      	ldr	r2, [pc, #108]	; (80001d4 <ledoff+0x52>)
+    ldr r3, [r2]
+ 8000166:	6813      	ldr	r3, [r2, #0]
+    lsrs r3, r3, #8
+ 8000168:	0a1b      	lsrs	r3, r3, #8
+    movs r4, #0x1
+ 800016a:	2401      	movs	r4, #1
+    ands r3, r3, r4
+ 800016c:	4023      	ands	r3, r4
+
+	cmp r3, #0x1
+ 800016e:	2b01      	cmp	r3, #1
+	beq ledon
+ 8000170:	d001      	beq.n	8000176 <ledon>
+	bne ledoff
+ 8000172:	d106      	bne.n	8000182 <ledoff>
+
+
+	b digits
+ 8000174:	e792      	b.n	800009c <digits>
+
+08000176 <ledon>:
+
+// TURN ON LED
+ledon:
+
+    ldr r2, =GPIOA_ODR
+ 8000176:	4a14      	ldr	r2, [pc, #80]	; (80001c8 <ledoff+0x46>)
+    ldr r3, [r2]
+ 8000178:	6813      	ldr	r3, [r2, #0]
+    movs r4, 0x10
+ 800017a:	2410      	movs	r4, #16
+    orrs r3, r3, r4
+ 800017c:	4323      	orrs	r3, r4
+    str r3, [r2]
+ 800017e:	6013      	str	r3, [r2, #0]
+
+    b digits
+ 8000180:	e78c      	b.n	800009c <digits>
+
+08000182 <ledoff>:
+
+// TURN OFF LED
+ledoff:
+
+    ldr r2, =GPIOA_ODR
+ 8000182:	4a11      	ldr	r2, [pc, #68]	; (80001c8 <ledoff+0x46>)
+    ldr r3, [r2]
+ 8000184:	6813      	ldr	r3, [r2, #0]
+    movs r4, 0x10
+ 8000186:	2410      	movs	r4, #16
+    mvns r4, r4
+ 8000188:	43e4      	mvns	r4, r4
+    adds r3, r3, r4
+ 800018a:	191b      	adds	r3, r3, r4
+    str r3, [r2]
+ 800018c:	6013      	str	r3, [r2, #0]
+
+    b digits
+ 800018e:	e785      	b.n	800009c <digits>
+
+
+	b .
+ 8000190:	e7fe      	b.n	8000190 <ledoff+0xe>
+
+	nop
+ 8000192:	46c0      	nop			; (mov r8, r8)
+	ldr r0, =_estack
+ 8000194:	20002000 	.word	0x20002000
+	ldr r0, =_sdata
+ 8000198:	20000000 	.word	0x20000000
+	ldr r1, =_edata
+ 800019c:	20000000 	.word	0x20000000
+	ldr r2, =_sidata
+ 80001a0:	080001e0 	.word	0x080001e0
+	ldr r2, =_sbss
+ 80001a4:	20000000 	.word	0x20000000
+	ldr r4, =_ebss
+ 80001a8:	20000000 	.word	0x20000000
+	ldr r2, =RCC_IOPENR
+ 80001ac:	40021034 	.word	0x40021034
+	ldr r2, =GPIOB_MODER
+ 80001b0:	50000400 	.word	0x50000400
+	ldr r4, =0x1555
+ 80001b4:	00001555 	.word	0x00001555
+	ldr r2, =GPIOA_MODER
+ 80001b8:	50000000 	.word	0x50000000
+	ldr r4, =0xFF
+ 80001bc:	000000ff 	.word	0x000000ff
+	ldr r4, =0x55
+ 80001c0:	00000055 	.word	0x00000055
+	ldr r4, =0x3
+ 80001c4:	00000003 	.word	0x00000003
+	ldr r2, =GPIOA_ODR
+ 80001c8:	50000014 	.word	0x50000014
+	ldr r2, =GPIOB_ODR
+ 80001cc:	50000414 	.word	0x50000414
+    ldr r1, =delay
+ 80001d0:	000003e8 	.word	0x000003e8
+    ldr r2, =GPIOA_IDR
+ 80001d4:	50000010 	.word	0x50000010
+
+Disassembly of section .init:
+
+080001d8 <_init>:
+ 80001d8:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+ 80001da:	46c0      	nop			; (mov r8, r8)
+
+Disassembly of section .fini:
+
+080001dc <_fini>:
+ 80001dc:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+ 80001de:	46c0      	nop			; (mov r8, r8)
